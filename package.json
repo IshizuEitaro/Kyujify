@@ -2,7 +2,7 @@
   "name": "kyujify",
   "displayName": "Kyujify: Shinjitai ↔ Kyujitai Converter",
   "description": "Convert between modern and traditional Japanese characters, Kyujitai and Shinjitai",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "Ishizue",
   "engines": {
     "vscode": "^1.98.0"
@@ -11,23 +11,30 @@
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ISHIZUE-LLC/Kyujify"
+    "url": "https://github.com/IshizuEitaro/Kyujify"
   },
   "activationEvents": [
     "onCommand:kyujify.toKyujitai",
     "onCommand:kyujify.toShinjitai",
-    "onStartupFinished"
+    "onCommand:kyujify.cycleVariants"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "kyujify.toKyujitai",
-        "title": "Convert to Kyujitai"
+        "title": "Convert to Kyujitai",
+        "category": "Kyujify"
       },
       {
         "command": "kyujify.toShinjitai",
-        "title": "Convert to Shinjitai"
+        "title": "Convert to Shinjitai",
+        "category": "Kyujify"
+      },
+      {
+        "command": "kyujify.cycleVariants",
+        "title": "Kyujify: Cycle Variants",
+        "category": "Kyujify"
       }
     ],
     "configuration": {
@@ -37,6 +44,11 @@
           "type": "string",
           "default": "./data/default_pairs.json",
           "description": "Path to the JSON file containing conversion pairs."
+        },
+        "kyujify.variantsFile": {
+          "type": "string",
+          "default": "./data/default_variants.json",
+          "description": "Path to the JSON file defining variant cycles as arrays, e.g. [[\"闘\",\"鬥\",\"鬪\",\"鬬\"]]. Used by Kyujify: Cycle Variants."
         },
         "kyujify.lineStartSymbol": {
           "type": "string",
