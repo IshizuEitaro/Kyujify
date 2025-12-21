@@ -18,7 +18,6 @@ export function convertText(text: string, to: 'kyujitai' | 'shinjitai', defaultP
     }
 }
 
-// Load and parse variant groups from JSON file (sibling to default_pairs.json)
 async function loadVariantGroupsFromFile(filePath: string, context: vscode.ExtensionContext): Promise<string[][] | null> {
     console.log(`[Kyujify] Attempting to load variant groups from: ${filePath}`);
     try {
@@ -46,7 +45,6 @@ async function loadVariantGroupsFromFile(filePath: string, context: vscode.Exten
             throw new Error('Variant file root must be an array');
         }
 
-        // Ensure all entries are arrays of strings
         const normalized: string[][] = [];
         for (const g of groups) {
             if (Array.isArray(g)) {
@@ -67,7 +65,6 @@ async function loadVariantGroupsFromFile(filePath: string, context: vscode.Exten
     }
 }
 
-// Build map: char -> nextChar in its variant cycle
 function buildNextVariantMap(variantGroups: string[][]): Record<string, string> {
     const nextMap: Record<string, string> = {};
     for (const group of variantGroups) {
@@ -86,9 +83,7 @@ function buildNextVariantMap(variantGroups: string[][]): Record<string, string> 
     return nextMap;
 }
 
-// Apply variant cycling to the given text using a pre-built nextVariant map
 export function cycleVariantsInText(text: string, nextVariantMap: Record<string, string>): string {
-    // Simple char-wise mapping; this is sufficient for Kanji variants
     let result = '';
     for (const ch of text) {
         const mapped = nextVariantMap[ch] || ch;
@@ -97,7 +92,6 @@ export function cycleVariantsInText(text: string, nextVariantMap: Record<string,
     return result;
 }
 
-// Public helper used by the Cycle Variants command
 export async function getNextVariantMap(context: vscode.ExtensionContext): Promise<Record<string, string>> {
     const defaultPath = './data/default_variants.json';
     const groups = await loadVariantGroupsFromFile(defaultPath, context);
@@ -112,7 +106,6 @@ function convertLine(text: string, to: 'kyujitai' | 'shinjitai', defaultPairs: [
     let convertedText = text.normalize('NFC');
     const exclusionPlaceholders: { [key: string]: string } = {};
 
-    // Replace excluded words with placeholders
     exclusions.forEach((exclusion, index) => {
         if (convertedText.includes(exclusion.normalize('NFC'))) {
             const placeholder = `__EXCLUSION_${index}__`;
@@ -122,14 +115,12 @@ function convertLine(text: string, to: 'kyujitai' | 'shinjitai', defaultPairs: [
         }
     });
 
-    // Apply default conversions
     for (const [shinjitai, kyujitai] of defaultPairs) {
         const from = (to === 'kyujitai' ? shinjitai : kyujitai).normalize('NFC');
         const toChar = (to === 'kyujitai' ? kyujitai : shinjitai).normalize('NFC');
         convertedText = convertedText.split(from).join(toChar);
     }
 
-    // Restore excluded words
     Object.entries(exclusionPlaceholders).forEach(([placeholder, original]) => {
         convertedText = convertedText.replaceAll(placeholder, original);
     });
@@ -140,7 +131,6 @@ function convertLine(text: string, to: 'kyujitai' | 'shinjitai', defaultPairs: [
 async function loadConversionPairsFromFile(filePath: string, context: vscode.ExtensionContext): Promise<[string, string][] | null> {
     console.log(`[Kyujify] Attempting to load pairs from: ${filePath}`);
     try {
-        // 1. Resolve VS Code variables like ${workspaceFolder}
         let resolvedPath = filePath;
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders && workspaceFolders.length > 0) {
@@ -148,12 +138,10 @@ async function loadConversionPairsFromFile(filePath: string, context: vscode.Ext
             resolvedPath = resolvedPath.replace(/\${workspaceFolder}/g, workspaceFolder);
         }
 
-        // 2. Determine if the path is absolute or relative
         let fileUri: vscode.Uri;
         if (path.isAbsolute(resolvedPath)) {
             fileUri = vscode.Uri.file(resolvedPath);
         } else {
-            // Assume relative to extension directory for defaults or simple relative paths
             fileUri = vscode.Uri.joinPath(context.extensionUri, resolvedPath);
         }
         
@@ -166,7 +154,6 @@ async function loadConversionPairsFromFile(filePath: string, context: vscode.Ext
         return pairs;
     } catch (error: any) {
         console.error(`[Kyujify] ERROR in loadConversionPairsFromFile for ${filePath}:`, error);
-        // Let the caller handle the error message
         return null;
     }
 }
@@ -175,9 +162,8 @@ export async function getConversionPairs(settings: vscode.WorkspaceConfiguration
     console.log('[Kyujify] getConversionPairs called.');
     const settingsObj = getSettings(settings);
     const customPath = settingsObj.conversionPairsFile;
-    const defaultPath = './data/default_pairs.json'; // The default value from package.json
+    const defaultPath = './data/default_pairs.json';
 
-    // 1. Try loading from the user-defined path
     let pairs = await loadConversionPairsFromFile(customPath, context);
 
     if (pairs && Array.isArray(pairs)) {
@@ -185,13 +171,11 @@ export async function getConversionPairs(settings: vscode.WorkspaceConfiguration
         return pairs;
     }
 
-    // 2. If custom path was set and failed, show a warning.
     if (customPath !== defaultPath) {
         vscode.window.showWarningMessage(`Failed to load conversion pairs from '${customPath}'. Falling back to default pairs.`);
         console.log(`[Kyujify] Custom path '${customPath}' failed. Falling back to default.`);
     }
     
-    // 3. Fallback to internal default path
     const defaultPairs = await loadConversionPairsFromFile(defaultPath, context);
 
     if (defaultPairs && Array.isArray(defaultPairs)) {
@@ -199,8 +183,148 @@ export async function getConversionPairs(settings: vscode.WorkspaceConfiguration
         return defaultPairs;
     }
 
-    // 4. If we've reached this point, both custom and default paths have failed.
     vscode.window.showErrorMessage('Failed to load any conversion pairs. Please check the extension settings and file integrity.');
     console.error('[Kyujify] FATAL: Failed to load any conversion pairs.');
     return [];
+}
+
+
+
+interface KakikaeRule {
+    new: string;
+    old: string[];
+    words: string[];
+}
+
+async function loadKakikaeRulesFromFile(filePath: string, context: vscode.ExtensionContext): Promise<KakikaeRule[] | null> {
+    console.log(`[Kyujify] Attempting to load kakikae rules from: ${filePath}`);
+    try {
+        let resolvedPath = filePath;
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (workspaceFolders && workspaceFolders.length > 0) {
+            const workspaceFolder = workspaceFolders[0].uri.fsPath;
+            resolvedPath = resolvedPath.replace(/\${workspaceFolder}/g, workspaceFolder);
+        }
+
+        let fileUri: vscode.Uri;
+        if (path.isAbsolute(resolvedPath)) {
+            fileUri = vscode.Uri.file(resolvedPath);
+        } else {
+            fileUri = vscode.Uri.joinPath(context.extensionUri, resolvedPath);
+        }
+
+        console.log(`[Kyujify] Constructed kakikae file URI: ${fileUri.toString()}`);
+        const fileContent = await vscode.workspace.fs.readFile(fileUri);
+        const decoder = new TextDecoder();
+        const jsonString = decoder.decode(fileContent);
+        const raw = JSON.parse(jsonString);
+
+        if (!Array.isArray(raw)) {
+            throw new Error('Kakikae file root must be an array');
+        }
+
+        const rules: KakikaeRule[] = [];
+        for (const entry of raw) {
+            if (!entry || typeof entry !== 'object') continue;
+            const newChar = typeof entry.new === 'string' ? entry.new.normalize('NFC') : '';
+            const oldList = Array.isArray(entry.old)
+                ? entry.old
+                    .filter((o: any) => typeof o === 'string' && o.length > 0)
+                    .map((o: string) => o.normalize('NFC'))
+                : [];
+            const wordsList = Array.isArray(entry.words)
+                ? entry.words
+                    .filter((w: any) => typeof w === 'string' && w.length > 0)
+                    .map((w: string) => w.normalize('NFC'))
+                : [];
+            if (!newChar || oldList.length === 0 || wordsList.length === 0) {
+                continue;
+            }
+            rules.push({ new: newChar, old: oldList, words: wordsList });
+        }
+
+        console.log(`[Kyujify] Successfully loaded ${rules.length} kakikae rules from ${filePath}`);
+        return rules;
+    } catch (error: any) {
+        console.error(`[Kyujify] ERROR in loadKakikaeRulesFromFile for ${filePath}:`, error);
+        return null;
+    }
+}
+
+function buildKakikaeMap(rules: KakikaeRule[]): Record<string, string> {
+    const map: Record<string, string> = {};
+
+    for (const rule of rules) {
+        const newChar = rule.new;
+        for (const wordModern of rule.words) {
+            const modern = wordModern;
+
+            let containsNew = modern.includes(newChar);
+
+            if (containsNew) {
+                for (const oldChar of rule.old) {
+                    const oldWord = modern.split(newChar).join(oldChar);
+                    if (oldWord !== modern) {
+                        map[oldWord] = modern;
+                    }
+                }
+            } else {
+                for (const oldChar of rule.old) {
+                    if (modern.includes(oldChar)) {
+                        const newWord = modern.split(oldChar).join(newChar);
+                        if (newWord !== modern) {
+                            map[modern] = newWord;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return map;
+}
+
+export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = []): string {
+    if (!kakikaeMap || Object.keys(kakikaeMap).length === 0) {
+        return text;
+    }
+
+    let convertedText = text.normalize('NFC');
+
+    const exclusionPlaceholders: { [placeholder: string]: string } = {};
+    exclusions.forEach((exclusion, index) => {
+        const norm = exclusion.normalize('NFC');
+        if (!norm) return;
+        if (convertedText.includes(norm)) {
+            const placeholder = `__KAKIKAE_EXCLUSION_${index}__`;
+            exclusionPlaceholders[placeholder] = norm;
+            convertedText = convertedText.split(norm).join(placeholder);
+        }
+    });
+
+    const keys = Object.keys(kakikaeMap).sort((a, b) => b.length - a.length);
+
+    for (const from of keys) {
+        const to = kakikaeMap[from];
+        if (!from || !to || from === to) continue;
+        if (convertedText.includes(from)) {
+            convertedText = convertedText.split(from).join(to);
+        }
+    }
+
+    Object.entries(exclusionPlaceholders).forEach(([placeholder, original]) => {
+        convertedText = convertedText.split(placeholder).join(original);
+    });
+
+    return convertedText;
+}
+
+export async function getKakikaeMap(settings: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext): Promise<Record<string, string>> {
+    const kakikaeFile = settings.get<string>('kakikaeFile', './data/default_kakikae.json');
+    const rules = await loadKakikaeRulesFromFile(kakikaeFile, context);
+    if (!rules) {
+        console.warn('[Kyujify] No kakikae rules loaded; Apply Kakikae will be a no-op.');
+        return {};
+    }
+    return buildKakikaeMap(rules);
 }
