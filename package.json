@@ -16,7 +16,8 @@
   "activationEvents": [
     "onCommand:kyujify.toKyujitai",
     "onCommand:kyujify.toShinjitai",
-    "onCommand:kyujify.cycleVariants"
+    "onCommand:kyujify.cycleVariants",
+    "onCommand:kyujify.applyKakikae"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -35,6 +36,11 @@
         "command": "kyujify.cycleVariants",
         "title": "Kyujify: Cycle Variants",
         "category": "Kyujify"
+      },
+      {
+        "command": "kyujify.applyKakikae",
+        "title": "Kyujify: Apply Kakikae",
+        "category": "Kyujify"
       }
     ],
     "configuration": {
@@ -49,6 +55,11 @@
           "type": "string",
           "default": "./data/default_variants.json",
           "description": "Path to the JSON file defining variant cycles as arrays, e.g. [[\"闘\",\"鬥\",\"鬪\",\"鬬\"]]. Used by Kyujify: Cycle Variants."
+        },
+        "kyujify.kakikaeFile": {
+          "type": "string",
+          "default": "./data/default_kakikae.json",
+          "description": "Path to the JSON file defining kakikae (代用語) rules with {\"new\",\"old\",\"words\"} entries. Used by Kyujify: Apply Kakikae."
         },
         "kyujify.lineStartSymbol": {
           "type": "string",
