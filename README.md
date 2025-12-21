@@ -164,5 +164,11 @@ Preserve specific combinations during conversion:
 
 Initial release
 
+### 2.0.0
+
+#### Added
+- Cycle through action for variants
+- Support for kakikae conversion
+
 ## License
 MIT (Conversion data derived from [kyujipy](https://github.com/DrTurnon/kyujipy) by DrTurnon, MIT licensed)
