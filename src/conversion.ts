@@ -225,7 +225,7 @@ async function loadKakikaeRulesFromFile(filePath: string, context: vscode.Extens
 
         const rules: KakikaeRule[] = [];
         for (const entry of raw) {
-            if (!entry || typeof entry !== 'object') continue;
+            if (!entry || typeof entry !== 'object') {continue;}
             const newChar = typeof entry.new === 'string' ? entry.new.normalize('NFC') : '';
             const oldList = Array.isArray(entry.old)
                 ? entry.old
@@ -294,7 +294,7 @@ export function applyKakikae(text: string, kakikaeMap: Record<string, string>, e
     const exclusionPlaceholders: { [placeholder: string]: string } = {};
     exclusions.forEach((exclusion, index) => {
         const norm = exclusion.normalize('NFC');
-        if (!norm) return;
+        if (!norm) {return;}
         if (convertedText.includes(norm)) {
             const placeholder = `__KAKIKAE_EXCLUSION_${index}__`;
             exclusionPlaceholders[placeholder] = norm;
@@ -306,7 +306,7 @@ export function applyKakikae(text: string, kakikaeMap: Record<string, string>, e
 
     for (const from of keys) {
         const to = kakikaeMap[from];
-        if (!from || !to || from === to) continue;
+        if (!from || !to || from === to) {continue;}
         if (convertedText.includes(from)) {
             convertedText = convertedText.split(from).join(to);
         }
