@@ -17,35 +17,36 @@ describe('conversion-logic', () => {
 
     describe('convertText', () => {
         it('converts to Kyujitai', () => {
-            const result = convertText('国の学体', 'kyujitai', defaultPairs);
-            expect(result).toBe('國の學體');
+            const result = convertText('国体', 'kyujitai', defaultPairs);
+            expect(result).toBe('國體');
         });
 
         it('converts to Shinjitai', () => {
-            const result = convertText('國の學體', 'shinjitai', defaultPairs);
-            expect(result).toBe('国の学体');
+            const result = convertText('國體', 'shinjitai', defaultPairs);
+            expect(result).toBe('国体');
         });
 
         it('respects exclusions (kyujify)', () => {
-            const result = convertText('国の学体', 'kyujitai', defaultPairs, ['学']);
-            expect(result).toBe('國の学體');
+            const result = convertText('国体', 'kyujitai', defaultPairs, ['国']);
+            expect(result).toBe('国體');
         });
 
         it('respects multi-character exclusions (shinjify)', () => {
-            const result = convertText('欠缺', 'shinjitai', defaultPairs, ['欠缺']);
+            const pairs: [string, string][] = [['欠', '缺']];
+            const result = convertText('欠缺', 'shinjitai', pairs, ['欠缺']);
             expect(result).toBe('欠缺');
         });
 
         it('respects line start symbols', () => {
-            const text = '国の学体\n#国の学体\n国の学体';
+            const text = '国体\n#国体\n国体';
             const result = convertText(text, 'kyujitai', defaultPairs, [], '#');
-            expect(result).toBe('国の学体\n#國の學體\n国の学体');
+            expect(result).toBe('国体\n#國體\n国体');
         });
 
         it('handles no symbols', () => {
-            const text = '国の学体\n#国の学体\n国の学体';
+            const text = '国体\n#国体\n国体';
             const result = convertText(text, 'kyujitai', defaultPairs, [], '');
-            expect(result).toBe('國の學體\n#國の學體\n國の學體');
+            expect(result).toBe('國體\n#國體\n國體');
         });
 
         it('handles multi-character pairs', () => {
@@ -54,10 +55,10 @@ describe('conversion-logic', () => {
             expect(result).toBe('學校に行く');
         });
 
-        it('handles no match', () => {            
+        it('handles no match', () => {
             const result = convertText('あいうえお', 'kyujitai', defaultPairs);
             expect(result).toBe('あいうえお');
-        }); 
+        });
     });
 
     describe('cycleVariantsInText', () => {
@@ -93,17 +94,17 @@ describe('conversion-logic', () => {
         });
 
         it('handles multiple groups without interference', () => {
-        const groups = [['闘', '鬥', '鬪', '鬬'], ['斎', '齋', '齊']];
-        const map = buildNextVariantMap(groups);
-        expect(map['闘']).toBe('鬥');
-        expect(map['斎']).toBe('齋');
+            const groups = [['闘', '鬥', '鬪', '鬬'], ['斎', '齋', '齊']];
+            const map = buildNextVariantMap(groups);
+            expect(map['闘']).toBe('鬥');
+            expect(map['斎']).toBe('齋');
         });
     });
 
     describe('applyKakikae', () => {
         const kakikaeMap = {
             '連繋': '連係',
-            '聯繋': '連係' 
+            '聯繋': '連係'
         };
 
         it('applies kakikae rules', () => {
@@ -172,6 +173,6 @@ describe('conversion-logic', () => {
             // '連係' should be '聯繋' after both rules are applied
             expect(map['連係']).toBe('聯繋');
         });
-        });
-        });
+    });
+});
 

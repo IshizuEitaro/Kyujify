@@ -29,8 +29,13 @@ export function convertLine(
     let convertedText = text.normalize('NFC');
     const exclusionPlaceholders: { [key: string]: string } = {};
 
-    exclusions.forEach((exclusion, index) => {
-        const normExclusion = exclusion.normalize('NFC');
+    // Sort exclusions by length (longest first) to prevent shorter exclusions from partially masking longer ones
+    const sortedExclusions = [...exclusions]
+        .map(e => e.normalize('NFC'))
+        .filter(e => e.length > 0)
+        .sort((a, b) => b.length - a.length);
+
+    sortedExclusions.forEach((normExclusion, index) => {
         if (convertedText.includes(normExclusion)) {
             const placeholder = `__EXCLUSION_${index}__`;
             exclusionPlaceholders[placeholder] = normExclusion;
@@ -113,15 +118,16 @@ export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' |
     const wordReplacements: Record<string, string> = {};
 
     if (direction === 'toShinjitai') {
-        // Collect all possible modern words and their immediate predecessors
-        const directRules: Record<string, string[]> = {}; // modern -> oldChars[]
-        for (const rule of rules) {
-            directRules[rule.new] = directRules[rule.new] || [];
-            directRules[rule.new].push(...rule.old);
-        }
-
         for (const rule of rules) {
             for (const modern of rule.words) {
+                // Scope old character lookups to only rules whose words array includes the current word
+                const applicableRules = rules.filter(r => r.words.includes(modern));
+                const wordSpecificDirectRules: Record<string, string[]> = {};
+                for (const ar of applicableRules) {
+                    wordSpecificDirectRules[ar.new] = wordSpecificDirectRules[ar.new] || [];
+                    wordSpecificDirectRules[ar.new].push(...ar.old);
+                }
+
                 // For a modern word like "連係", generate ALL possible older versions
                 // by replacing each modern character with its potential old counterparts.
                 const sources = [modern];
@@ -130,9 +136,9 @@ export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' |
                     changed = false;
                     const currentSources = [...sources];
                     for (const source of currentSources) {
-                        for (const newChar in directRules) {
+                        for (const newChar in wordSpecificDirectRules) {
                             if (source.includes(newChar)) {
-                                for (const oldChar of directRules[newChar]) {
+                                for (const oldChar of wordSpecificDirectRules[newChar]) {
                                     const nextSource = source.split(newChar).join(oldChar);
                                     if (!sources.includes(nextSource)) {
                                         sources.push(nextSource);
@@ -199,9 +205,12 @@ function applyKakikaeInternal(text: string, kakikaeMap: Record<string, string>, 
     let convertedText = text.normalize('NFC');
 
     const exclusionPlaceholders: { [placeholder: string]: string } = {};
-    exclusions.forEach((exclusion, index) => {
-        const norm = exclusion.normalize('NFC');
-        if (!norm) {return;}
+    const sortedExclusions = [...exclusions]
+        .map(e => e.normalize('NFC'))
+        .filter(e => e.length > 0)
+        .sort((a, b) => b.length - a.length);
+
+    sortedExclusions.forEach((norm, index) => {
         if (convertedText.includes(norm)) {
             const placeholder = `__KAKIKAE_EXCLUSION_${index}__`;
             exclusionPlaceholders[placeholder] = norm;
