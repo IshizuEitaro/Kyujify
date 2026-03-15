@@ -1,21 +1,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { getSettings } from './settings';
+import {
+    convertText as coreConvertText,
+    cycleVariantsInText as coreCycleVariantsInText,
+    applyKakikae as coreApplyKakikae,
+    buildNextVariantMap,
+    buildKakikaeMap,
+    KakikaeRule
+} from './core/conversion-logic';
 
 export function convertText(text: string, to: 'kyujitai' | 'shinjitai', defaultPairs: [string, string][], exclusions: string[] = [], symbol: string = ''): string {
-    if (symbol) {
-        const lines = text.split('\n');
-        const convertedLines = lines.map(line => {
-            if (line.startsWith(symbol)) {
-                const trimmedLine = line.slice(symbol.length);
-                return symbol + convertLine(trimmedLine, to, defaultPairs, exclusions, symbol);
-            }
-            return line;
-        });
-        return convertedLines.join('\n');
-    } else {
-        return convertLine(text, to, defaultPairs, exclusions, symbol);
-    }
+    return coreConvertText(text, to, defaultPairs, exclusions, symbol);
 }
 
 async function loadVariantGroupsFromFile(filePath: string, context: vscode.ExtensionContext): Promise<string[][] | null> {
@@ -65,31 +61,8 @@ async function loadVariantGroupsFromFile(filePath: string, context: vscode.Exten
     }
 }
 
-function buildNextVariantMap(variantGroups: string[][]): Record<string, string> {
-    const nextMap: Record<string, string> = {};
-    for (const group of variantGroups) {
-        const len = group.length;
-        if (len < 2) {
-            continue;
-        }
-        for (let i = 0; i < len; i++) {
-            const from = group[i];
-            const to = group[(i + 1) % len];
-            if (from && to && from !== to) {
-                nextMap[from] = to;
-            }
-        }
-    }
-    return nextMap;
-}
-
 export function cycleVariantsInText(text: string, nextVariantMap: Record<string, string>): string {
-    let result = '';
-    for (const ch of text) {
-        const mapped = nextVariantMap[ch] || ch;
-        result += mapped;
-    }
-    return result;
+    return coreCycleVariantsInText(text, nextVariantMap);
 }
 
 export async function getNextVariantMap(context: vscode.ExtensionContext): Promise<Record<string, string>> {
@@ -100,32 +73,6 @@ export async function getNextVariantMap(context: vscode.ExtensionContext): Promi
         return {};
     }
     return buildNextVariantMap(groups);
-}
-
-function convertLine(text: string, to: 'kyujitai' | 'shinjitai', defaultPairs: [string, string][], exclusions: string[], symbol: string): string {
-    let convertedText = text.normalize('NFC');
-    const exclusionPlaceholders: { [key: string]: string } = {};
-
-    exclusions.forEach((exclusion, index) => {
-        if (convertedText.includes(exclusion.normalize('NFC'))) {
-            const placeholder = `__EXCLUSION_${index}__`;
-            const normalizedExclusion = exclusion.normalize('NFC');
-            exclusionPlaceholders[placeholder] = normalizedExclusion;
-            convertedText = convertedText.replaceAll(normalizedExclusion, placeholder);
-        }
-    });
-
-    for (const [shinjitai, kyujitai] of defaultPairs) {
-        const from = (to === 'kyujitai' ? shinjitai : kyujitai).normalize('NFC');
-        const toChar = (to === 'kyujitai' ? kyujitai : shinjitai).normalize('NFC');
-        convertedText = convertedText.split(from).join(toChar);
-    }
-
-    Object.entries(exclusionPlaceholders).forEach(([placeholder, original]) => {
-        convertedText = convertedText.replaceAll(placeholder, original);
-    });
-
-    return convertedText;
 }
 
 async function loadConversionPairsFromFile(filePath: string, context: vscode.ExtensionContext): Promise<[string, string][] | null> {
@@ -188,14 +135,6 @@ export async function getConversionPairs(settings: vscode.WorkspaceConfiguration
     return [];
 }
 
-
-
-interface KakikaeRule {
-    new: string;
-    old: string[];
-    words: string[];
-}
-
 async function loadKakikaeRulesFromFile(filePath: string, context: vscode.ExtensionContext): Promise<KakikaeRule[] | null> {
     console.log(`[Kyujify] Attempting to load kakikae rules from: ${filePath}`);
     try {
@@ -240,7 +179,7 @@ async function loadKakikaeRulesFromFile(filePath: string, context: vscode.Extens
             if (!newChar || oldList.length === 0 || wordsList.length === 0) {
                 continue;
             }
-            rules.push({ new: newChar, old: oldList, words: wordsList });
+            rules.push({ new: newChar, old: oldList, words: wordsList } as KakikaeRule);
         }
 
         console.log(`[Kyujify] Successfully loaded ${rules.length} kakikae rules from ${filePath}`);
@@ -251,80 +190,16 @@ async function loadKakikaeRulesFromFile(filePath: string, context: vscode.Extens
     }
 }
 
-function buildKakikaeMap(rules: KakikaeRule[]): Record<string, string> {
-    const map: Record<string, string> = {};
-
-    for (const rule of rules) {
-        const newChar = rule.new;
-        for (const wordModern of rule.words) {
-            const modern = wordModern;
-
-            let containsNew = modern.includes(newChar);
-
-            if (containsNew) {
-                for (const oldChar of rule.old) {
-                    const oldWord = modern.split(newChar).join(oldChar);
-                    if (oldWord !== modern) {
-                        map[oldWord] = modern;
-                    }
-                }
-            } else {
-                for (const oldChar of rule.old) {
-                    if (modern.includes(oldChar)) {
-                        const newWord = modern.split(oldChar).join(newChar);
-                        if (newWord !== modern) {
-                            map[modern] = newWord;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return map;
-}
-
 export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = []): string {
-    if (!kakikaeMap || Object.keys(kakikaeMap).length === 0) {
-        return text;
-    }
-
-    let convertedText = text.normalize('NFC');
-
-    const exclusionPlaceholders: { [placeholder: string]: string } = {};
-    exclusions.forEach((exclusion, index) => {
-        const norm = exclusion.normalize('NFC');
-        if (!norm) {return;}
-        if (convertedText.includes(norm)) {
-            const placeholder = `__KAKIKAE_EXCLUSION_${index}__`;
-            exclusionPlaceholders[placeholder] = norm;
-            convertedText = convertedText.split(norm).join(placeholder);
-        }
-    });
-
-    const keys = Object.keys(kakikaeMap).sort((a, b) => b.length - a.length);
-
-    for (const from of keys) {
-        const to = kakikaeMap[from];
-        if (!from || !to || from === to) {continue;}
-        if (convertedText.includes(from)) {
-            convertedText = convertedText.split(from).join(to);
-        }
-    }
-
-    Object.entries(exclusionPlaceholders).forEach(([placeholder, original]) => {
-        convertedText = convertedText.split(placeholder).join(original);
-    });
-
-    return convertedText;
+    return coreApplyKakikae(text, kakikaeMap, exclusions);
 }
 
-export async function getKakikaeMap(settings: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext): Promise<Record<string, string>> {
+export async function getKakikaeMap(settings: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, direction: 'toShinjitai' | 'toKyujitai' = 'toShinjitai'): Promise<Record<string, string>> {
     const kakikaeFile = settings.get<string>('kakikaeFile', './data/default_kakikae.json');
     const rules = await loadKakikaeRulesFromFile(kakikaeFile, context);
     if (!rules) {
         console.warn('[Kyujify] No kakikae rules loaded; Apply Kakikae will be a no-op.');
         return {};
     }
-    return buildKakikaeMap(rules);
+    return buildKakikaeMap(rules, direction);
 }

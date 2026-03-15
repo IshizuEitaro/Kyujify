@@ -37,6 +37,11 @@
         "command": "kyujify.applyKakikae",
         "title": "Kyujify: Apply Kakikae",
         "category": "Kyujify"
+      },
+      {
+        "command": "kyujify.reverseKakikae",
+        "title": "Kyujify: Reverse Kakikae",
+        "category": "Kyujify"
       }
     ],
     "configuration": {
