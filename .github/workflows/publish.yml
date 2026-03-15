@@ -31,4 +31,4 @@ jobs:
         run: pnpm run compile
 
       - name: Publish to Marketplace
-        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
+        run: npx @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
