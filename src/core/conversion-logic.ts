@@ -110,54 +110,61 @@ export interface KakikaeRule {
 }
 
 export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' | 'toKyujitai' = 'toShinjitai'): Record<string, string> {
-    const map: Record<string, string> = {};
     const wordReplacements: Record<string, string> = {};
 
-    for (const rule of rules) {
-        const newChar = rule.new;
-        for (const wordModern of rule.words) {
-            const modern = wordModern;
+    if (direction === 'toShinjitai') {
+        // Collect all possible modern words and their immediate predecessors
+        const directRules: Record<string, string[]> = {}; // modern -> oldChars[]
+        for (const rule of rules) {
+            directRules[rule.new] = directRules[rule.new] || [];
+            directRules[rule.new].push(...rule.old);
+        }
 
-            if (direction === 'toShinjitai') {
-                // Default Kakikae: Old characters -> Modern replacements
-                for (const oldChar of rule.old) {
-                    if (modern.includes(oldChar)) {
-                        let replaced = wordReplacements[modern] || modern;
-                        while (replaced.includes(oldChar)) {
-                            replaced = replaced.split(oldChar).join(newChar);
-                        }
-                        if (replaced !== modern) {
-                            wordReplacements[modern] = replaced;
-                        }
-                    } else if (modern.includes(newChar)) {
-                        // Handle cases where modern word is the target of another rule
-                        let source = modern;
-                        while (source.includes(newChar)) {
-                            source = source.split(newChar).join(oldChar);
-                        }
-                        if (source !== modern) {
-                            wordReplacements[source] = wordReplacements[source] || modern;
+        for (const rule of rules) {
+            for (const modern of rule.words) {
+                // For a modern word like "連係", generate ALL possible older versions
+                // by replacing each modern character with its potential old counterparts.
+                const sources = [modern];
+                let changed = true;
+                while (changed) {
+                    changed = false;
+                    const currentSources = [...sources];
+                    for (const source of currentSources) {
+                        for (const newChar in directRules) {
+                            if (source.includes(newChar)) {
+                                for (const oldChar of directRules[newChar]) {
+                                    const nextSource = source.split(newChar).join(oldChar);
+                                    if (!sources.includes(nextSource)) {
+                                        sources.push(nextSource);
+                                        wordReplacements[nextSource] = modern;
+                                        changed = true;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            } else {
-                // Reverse Kakikae: Modern replacements -> Old characters
+                
+                // Also handle the case where modern word itself contains old characters
                 for (const oldChar of rule.old) {
-                    if (modern.includes(newChar)) {
-                        let replaced = wordReplacements[modern] || modern;
-                        while (replaced.includes(newChar)) {
-                            replaced = replaced.split(newChar).join(oldChar);
-                        }
-                        if (replaced !== modern) {
-                            wordReplacements[modern] = replaced;
-                        }
-                    } else if (modern.includes(oldChar)) {
-                        let source = modern;
-                        while (source.includes(oldChar)) {
-                            source = source.split(oldChar).join(newChar);
-                        }
-                        if (source !== modern) {
-                            wordReplacements[source] = wordReplacements[source] || modern;
+                    if (modern.includes(oldChar)) {
+                        const replacement = modern.split(oldChar).join(rule.new);
+                        wordReplacements[modern] = replacement;
+                    }
+                }
+            }
+        }
+    } else {
+        // Reverse Kakikae: Modern words -> Old versions
+        for (const rule of rules) {
+            for (const modern of rule.words) {
+                for (const oldChar of rule.old) {
+                    if (modern.includes(rule.new)) {
+                        const target = modern;
+                        const existing = wordReplacements[target] || target;
+                        const replacement = existing.split(rule.new).join(oldChar);
+                        if (replacement !== target) {
+                            wordReplacements[target] = replacement;
                         }
                     }
                 }

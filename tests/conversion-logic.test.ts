@@ -115,6 +115,23 @@ describe('conversion-logic', () => {
             expect(applyKakikae('連繋と聯繋', kakikaeMap)).toBe('連係と連係');
         });
 
+        it('handles multiple replacements in the same word (toShinjitai)', () => {
+            const rules: KakikaeRule[] = [
+                {
+                    new: '係',
+                    old: ['繋'],
+                    words: ['連係']
+                },
+                {
+                    new: '連',
+                    old: ['聯'],
+                    words: ['連係']
+                }
+            ];
+            const map = buildKakikaeMap(rules, 'toShinjitai');
+            expect(map['聯繋']).toBe('連係');
+        });
+
         it('respects exclusions in kakikae', () => {
             expect(applyKakikae('連繋している', kakikaeMap, ['連繋'])).toBe('連繋している');
         });
