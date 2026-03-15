@@ -61,8 +61,8 @@ async function loadVariantGroupsFromFile(filePath: string, context: vscode.Exten
     }
 }
 
-export function cycleVariantsInText(text: string, nextVariantMap: Record<string, string>): string {
-    return coreCycleVariantsInText(text, nextVariantMap);
+export function cycleVariantsInText(text: string, nextVariantMap: Record<string, string>, symbol: string = ''): string {
+    return coreCycleVariantsInText(text, nextVariantMap, symbol);
 }
 
 export async function getNextVariantMap(context: vscode.ExtensionContext): Promise<Record<string, string>> {
@@ -190,8 +190,8 @@ async function loadKakikaeRulesFromFile(filePath: string, context: vscode.Extens
     }
 }
 
-export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = []): string {
-    return coreApplyKakikae(text, kakikaeMap, exclusions);
+export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = [], symbol: string = ''): string {
+    return coreApplyKakikae(text, kakikaeMap, exclusions, symbol);
 }
 
 export async function getKakikaeMap(settings: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, direction: 'toShinjitai' | 'toKyujitai' = 'toShinjitai'): Promise<Record<string, string>> {
