@@ -191,8 +191,8 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('[Kyujify] Applying reverse kakikae edit to editor...');
 		editor.edit(editBuilder => {
 			if (selection.isEmpty) {
-				const lastLine = editor.document.lineAt(editor.document.lineAt(editor.document.lineCount - 1).range.end.line, 0).range.end; // Corrected range
-				const fullRange = new vscode.Range(new vscode.Position(0, 0), editor.document.lineAt(editor.document.lineCount - 1).range.end);
+				const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+				const fullRange = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
 				editBuilder.replace(fullRange, convertedText);
 			} else {
 				editBuilder.replace(selection, convertedText);
