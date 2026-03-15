@@ -30,5 +30,8 @@ jobs:
       - name: Compile
         run: pnpm run compile
 
+      - name: Package Extension
+        run: npx @vscode/vsce package --no-dependencies
+
       - name: Publish to Marketplace
-        run: npx @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
+        run: npx @vscode/vsce publish --no-dependencies -i *.vsix -p ${{ secrets.VSCE_PAT }}
