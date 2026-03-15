@@ -11,27 +11,45 @@ export function activate(context: vscode.ExtensionContext) {
 			console.log('[Kyujify] No active text editor.');
 			return;
 		}
+		const selection = editor.selection;
+		const documentVersion = editor.document.version;
+
 		const settings = vscode.workspace.getConfiguration('kyujify');
 		const defaultPairs = await getConversionPairs(settings, context);
+
+		if (editor.document.version !== documentVersion) {
+			vscode.window.showWarningMessage('Kyujify: Document changed before conversion finished. Please run the command again.');
+			return;
+		}
+
 		const symbol = settings.get<string>('lineStartSymbol', '');
 		const exclusions = settings.get<string[]>('exclusions', []);
 
-		const selection = editor.selection;
-		const text = selection.isEmpty ? editor.document.getText() : editor.document.getText(selection);
-		console.log(`[Kyujify] Text to convert (first 100 chars): ${text.substring(0, 100)}`);
+		let range: vscode.Range;
+		if (selection.isEmpty) {
+			const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
+		} else if (symbol) {
+			// Expand to full lines if symbol is used, to ensure we catch the prefix
+			const startLine = selection.start.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
+			const endLineObj = editor.document.lineAt(endLine);
+			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
+		} else {
+			range = selection;
+		}
+
+		const text = editor.document.getText(range);
+		console.log(`[Kyujify] Text to convert (length): ${text.length}`);
 
 		const convertedText = convertText(text, 'kyujitai', defaultPairs, exclusions, symbol);
-		console.log(`[Kyujify] Converted text (first 100 chars): ${convertedText.substring(0, 100)}`);
+		console.log(`[Kyujify] Converted text (length): ${convertedText.length}`);
 
 		console.log('[Kyujify] Applying edit to editor...');
 		editor.edit(editBuilder => {
-			if (selection.isEmpty) {
-				const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-				const fullRange = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
-				editBuilder.replace(fullRange, convertedText);
-			} else {
-				editBuilder.replace(selection, convertedText);
-			}
+			editBuilder.replace(range, convertedText);
 		}).then(success => {
 			console.log(`[Kyujify] Edit applied successfully: ${success}`);
 			if (!success) {
@@ -47,27 +65,44 @@ export function activate(context: vscode.ExtensionContext) {
 			console.log('[Kyujify] No active text editor.');
 			return;
 		}
+		const selection = editor.selection;
+		const documentVersion = editor.document.version;
+
 		const settings = vscode.workspace.getConfiguration('kyujify');
 		const defaultPairs = await getConversionPairs(settings, context);
+
+		if (editor.document.version !== documentVersion) {
+			vscode.window.showWarningMessage('Kyujify: Document changed before conversion finished. Please run the command again.');
+			return;
+		}
+
 		const symbol = settings.get<string>('lineStartSymbol', '');
 		const exclusions = settings.get<string[]>('exclusions', []);
 
-		const selection = editor.selection;
-		const text = selection.isEmpty ? editor.document.getText() : editor.document.getText(selection);
-		console.log(`[Kyujify] Text to convert (first 100 chars): ${text.substring(0, 100)}`);
+		let range: vscode.Range;
+		if (selection.isEmpty) {
+			const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
+		} else if (symbol) {
+			const startLine = selection.start.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
+			const endLineObj = editor.document.lineAt(endLine);
+			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
+		} else {
+			range = selection;
+		}
+
+		const text = editor.document.getText(range);
+		console.log(`[Kyujify] Text to convert (length): ${text.length}`);
 
 		const convertedText = convertText(text, 'shinjitai', defaultPairs, exclusions, symbol);
-		console.log(`[Kyujify] Converted text (first 100 chars): ${convertedText.substring(0, 100)}`);
+		console.log(`[Kyujify] Converted text (length): ${convertedText.length}`);
 
 		console.log('[Kyujify] Applying edit to editor...');
 		editor.edit(editBuilder => {
-			if (selection.isEmpty) {
-				const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-				const fullRange = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
-				editBuilder.replace(fullRange, convertedText);
-			} else {
-				editBuilder.replace(selection, convertedText);
-			}
+			editBuilder.replace(range, convertedText);
 		}).then(success => {
 			console.log(`[Kyujify] Edit applied successfully: ${success}`);
 			if (!success) {
@@ -85,30 +120,47 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		const selection = editor.selection;
-		const text = selection.isEmpty
-			? editor.document.getText()
-			: editor.document.getText(selection);
+		const documentVersion = editor.document.version;
 
-		console.log(`[Kyujify] Text to cycle (first 100 chars): ${text.substring(0, 100)}`);
-
+		const settings = vscode.workspace.getConfiguration('kyujify');
 		const nextVariantMap = await getNextVariantMap(context);
+
+		if (editor.document.version !== documentVersion) {
+			vscode.window.showWarningMessage('Kyujify: Document changed before conversion finished. Please run the command again.');
+			return;
+		}
+
+		const symbol = settings.get<string>('lineStartSymbol', '');
+
+		let range: vscode.Range;
+		if (selection.isEmpty) {
+			const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
+		} else if (symbol) {
+			const startLine = selection.start.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
+			const endLineObj = editor.document.lineAt(endLine);
+			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
+		} else {
+			range = selection;
+		}
+
+		const text = editor.document.getText(range);
+		console.log(`[Kyujify] Text to cycle (length): ${text.length}`);
+
 		if (!nextVariantMap || Object.keys(nextVariantMap).length === 0) {
 			console.log('[Kyujify] No variant mappings available; cycleVariants is a no-op.');
 			return;
 		}
 
-		const cycledText = cycleVariantsInText(text, nextVariantMap);
-		console.log(`[Kyujify] Cycled text (first 100 chars): ${cycledText.substring(0, 100)}`);
+		const cycledText = cycleVariantsInText(text, nextVariantMap, symbol);
+		console.log(`[Kyujify] Cycled text (length): ${cycledText.length}`);
 
 		console.log('[Kyujify] Applying cycleVariants edit to editor...');
 		editor.edit(editBuilder => {
-			if (selection.isEmpty) {
-				const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-				const fullRange = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
-				editBuilder.replace(fullRange, cycledText);
-			} else {
-				editBuilder.replace(selection, cycledText);
-			}
+			editBuilder.replace(range, cycledText);
 		}).then(success => {
 			console.log(`[Kyujify] cycleVariants edit applied successfully: ${success}`);
 			if (!success) {
@@ -125,34 +177,48 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const settings = vscode.workspace.getConfiguration('kyujify');
-		const exclusions = settings.get<string[]>('exclusions', []);
-
 		const selection = editor.selection;
-		const text = selection.isEmpty
-			? editor.document.getText()
-			: editor.document.getText(selection);
+		const documentVersion = editor.document.version;
 
-		console.log(`[Kyujify] Text for kakikae (first 100 chars): ${text.substring(0, 100)}`);
+		const settings = vscode.workspace.getConfiguration('kyujify');
+		const kakikaeMap = await getKakikaeMap(settings, context, 'toShinjitai');
 
-		const kakikaeMap = await getKakikaeMap(settings, context);
+		if (editor.document.version !== documentVersion) {
+			vscode.window.showWarningMessage('Kyujify: Document changed before conversion finished. Please run the command again.');
+			return;
+		}
+
+		const exclusions = settings.get<string[]>('exclusions', []);
+		const symbol = settings.get<string>('lineStartSymbol', '');
+
+		let range: vscode.Range;
+		if (selection.isEmpty) {
+			const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
+		} else if (symbol) {
+			const startLine = selection.start.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
+			const endLineObj = editor.document.lineAt(endLine);
+			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
+		} else {
+			range = selection;
+		}
+
+		const text = editor.document.getText(range);
+		console.log(`[Kyujify] Text for kakikae (length): ${text.length}`);
 		if (!kakikaeMap || Object.keys(kakikaeMap).length === 0) {
 			console.log('[Kyujify] No kakikae mappings available; applyKakikae is a no-op.');
 			return;
 		}
 
-		const convertedText = applyKakikae(text, kakikaeMap, exclusions);
-		console.log(`[Kyujify] Kakikae-converted text (first 100 chars): ${convertedText.substring(0, 100)}`);
+		const convertedText = applyKakikae(text, kakikaeMap, exclusions, symbol);
+		console.log(`[Kyujify] Kakikae-converted text (length): ${convertedText.length}`);
 
 		console.log('[Kyujify] Applying kakikae edit to editor...');
 		editor.edit(editBuilder => {
-			if (selection.isEmpty) {
-				const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-				const fullRange = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
-				editBuilder.replace(fullRange, convertedText);
-			} else {
-				editBuilder.replace(selection, convertedText);
-			}
+			editBuilder.replace(range, convertedText);
 		}).then(success => {
 			console.log(`[Kyujify] applyKakikae edit applied successfully: ${success}`);
 			if (!success) {
@@ -161,7 +227,65 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	});
 
-	context.subscriptions.push(toKyujitai, toShinjitai, cycleVariants, applyKakikaeCmd);
+	const reverseKakikaeCmd = vscode.commands.registerCommand('kyujify.reverseKakikae', async () => {
+		console.log('[Kyujify] reverseKakikae command triggered.');
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			console.log('[Kyujify] No active text editor.');
+			return;
+		}
+
+		const selection = editor.selection;
+		const documentVersion = editor.document.version;
+
+		const settings = vscode.workspace.getConfiguration('kyujify');
+		const kakikaeMap = await getKakikaeMap(settings, context, 'toKyujitai');
+
+		if (editor.document.version !== documentVersion) {
+			vscode.window.showWarningMessage('Kyujify: Document changed before conversion finished. Please run the command again.');
+			return;
+		}
+
+		const exclusions = settings.get<string[]>('exclusions', []);
+		const symbol = settings.get<string>('lineStartSymbol', '');
+
+		let range: vscode.Range;
+		if (selection.isEmpty) {
+			const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
+		} else if (symbol) {
+			const startLine = selection.start.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
+			const endLineObj = editor.document.lineAt(endLine);
+			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
+		} else {
+			range = selection;
+		}
+
+		const text = editor.document.getText(range);
+		console.log(`[Kyujify] Text for reverse kakikae (length): ${text.length}`);
+		if (!kakikaeMap || Object.keys(kakikaeMap).length === 0) {
+			console.log('[Kyujify] No kakikae mappings available; reverseKakikae is a no-op.');
+			return;
+		}
+
+		const convertedText = applyKakikae(text, kakikaeMap, exclusions, symbol);
+		console.log(`[Kyujify] Reverse Kakikae-converted text (length): ${convertedText.length}`);
+
+		console.log('[Kyujify] Applying reverse kakikae edit to editor...');
+		editor.edit(editBuilder => {
+			editBuilder.replace(range, convertedText);
+		}).then(success => {
+			console.log(`[Kyujify] reverseKakikae edit applied successfully: ${success}`);
+			if (!success) {
+				vscode.window.showErrorMessage('Kyujify: Failed to apply reverse kakikae.');
+			}
+		});
+	});
+
+	context.subscriptions.push(toKyujitai, toShinjitai, cycleVariants, applyKakikaeCmd, reverseKakikaeCmd);
 }
 
 export function deactivate() {}
