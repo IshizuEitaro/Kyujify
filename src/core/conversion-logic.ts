@@ -1,3 +1,11 @@
+function makeUniquePlaceholder(prefix: string, index: number, text: string): string {
+    let token = `\uE000${prefix}_${index}\uE001`;
+    while (text.includes(token)) {
+        token += '\uE002';
+    }
+    return token;
+}
+
 export function convertText(
     text: string,
     to: 'kyujitai' | 'shinjitai',
@@ -37,7 +45,7 @@ export function convertLine(
 
     sortedExclusions.forEach((normExclusion, index) => {
         if (convertedText.includes(normExclusion)) {
-            const placeholder = `__EXCLUSION_${index}__`;
+            const placeholder = makeUniquePlaceholder('EXCLUSION', index, convertedText);
             exclusionPlaceholders[placeholder] = normExclusion;
             convertedText = convertedText.replaceAll(normExclusion, placeholder);
         }
@@ -212,7 +220,7 @@ function applyKakikaeInternal(text: string, kakikaeMap: Record<string, string>, 
 
     sortedExclusions.forEach((norm, index) => {
         if (convertedText.includes(norm)) {
-            const placeholder = `__KAKIKAE_EXCLUSION_${index}__`;
+            const placeholder = makeUniquePlaceholder('KAKIKAE_EXCLUSION', index, convertedText);
             exclusionPlaceholders[placeholder] = norm;
             convertedText = convertedText.split(norm).join(placeholder);
         }

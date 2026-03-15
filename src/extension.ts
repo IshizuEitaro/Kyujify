@@ -24,7 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
 		} else if (symbol) {
 			// Expand to full lines if symbol is used, to ensure we catch the prefix
 			const startLine = selection.start.line;
-			const endLine = selection.end.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
 			const endLineObj = editor.document.lineAt(endLine);
 			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
 		} else {
@@ -67,7 +69,9 @@ export function activate(context: vscode.ExtensionContext) {
 			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
 		} else if (symbol) {
 			const startLine = selection.start.line;
-			const endLine = selection.end.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
 			const endLineObj = editor.document.lineAt(endLine);
 			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
 		} else {
@@ -109,7 +113,9 @@ export function activate(context: vscode.ExtensionContext) {
 			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
 		} else if (symbol) {
 			const startLine = selection.start.line;
-			const endLine = selection.end.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
 			const endLineObj = editor.document.lineAt(endLine);
 			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
 		} else {
@@ -158,7 +164,9 @@ export function activate(context: vscode.ExtensionContext) {
 			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
 		} else if (symbol) {
 			const startLine = selection.start.line;
-			const endLine = selection.end.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
 			const endLineObj = editor.document.lineAt(endLine);
 			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
 		} else {
@@ -207,7 +215,9 @@ export function activate(context: vscode.ExtensionContext) {
 			range = new vscode.Range(new vscode.Position(0, 0), lastLine.range.end);
 		} else if (symbol) {
 			const startLine = selection.start.line;
-			const endLine = selection.end.line;
+			const endLine = selection.end.character === 0 && selection.end.line > selection.start.line
+				? selection.end.line - 1
+				: selection.end.line;
 			const endLineObj = editor.document.lineAt(endLine);
 			range = new vscode.Range(startLine, 0, endLine, endLineObj.range.end.character);
 		} else {
