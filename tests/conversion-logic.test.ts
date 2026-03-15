@@ -102,12 +102,17 @@ describe('conversion-logic', () => {
 
     describe('applyKakikae', () => {
         const kakikaeMap = {
-            '連繋': '連係'
+            '連繋': '連係',
+            '聯繋': '連係' 
         };
 
         it('applies kakikae rules', () => {
             expect(applyKakikae('連繋している', kakikaeMap)).toBe('連係している');
             expect(applyKakikae('繋索する', kakikaeMap)).toBe('繋索する');
+        });
+
+        it('applies kakikae rules to multiple occurrences', () => {
+            expect(applyKakikae('連繋と聯繋', kakikaeMap)).toBe('連係と連係');
         });
 
         it('respects exclusions in kakikae', () => {
@@ -133,17 +138,23 @@ describe('conversion-logic', () => {
             expect(map['双数']).toBe('雙数');
         });
 
-        it('builds a map from rules (old to modern)', () => {
+        it('handles multiple replacements in the same word', () => {
             const rules: KakikaeRule[] = [
                 {
-                    new: '芸',
-                    old: ['藝'],
-                    words: ['文藝']
+                    new: '係',
+                    old: ['繋'],
+                    words: ['連係']
+                },
+                {
+                    new: '連',
+                    old: ['聯'],
+                    words: ['連係']
                 }
             ];
-            const map = buildKakikaeMap(rules, 'toShinjitai');
-            // '文藝' includes '藝' (oldChar), so map['文藝'] = '文芸'
-            expect(map['文藝']).toBe('文芸');
+            const map = buildKakikaeMap(rules, 'toKyujitai');
+            // '連係' should be '聯繋' after both rules are applied
+            expect(map['連係']).toBe('聯繋');
         });
-    });
-});
+        });
+        });
+

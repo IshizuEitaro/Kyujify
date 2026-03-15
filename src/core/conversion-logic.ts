@@ -111,6 +111,7 @@ export interface KakikaeRule {
 
 export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' | 'toKyujitai' = 'toShinjitai'): Record<string, string> {
     const map: Record<string, string> = {};
+    const wordReplacements: Record<string, string> = {};
 
     for (const rule of rules) {
         const newChar = rule.new;
@@ -121,14 +122,21 @@ export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' |
                 // Default Kakikae: Old characters -> Modern replacements
                 for (const oldChar of rule.old) {
                     if (modern.includes(oldChar)) {
-                        const newWord = modern.split(oldChar).join(newChar);
-                        if (newWord !== modern) {
-                            map[modern] = newWord;
+                        let replaced = wordReplacements[modern] || modern;
+                        while (replaced.includes(oldChar)) {
+                            replaced = replaced.split(oldChar).join(newChar);
+                        }
+                        if (replaced !== modern) {
+                            wordReplacements[modern] = replaced;
                         }
                     } else if (modern.includes(newChar)) {
-                        const oldWord = modern.split(newChar).join(oldChar);
-                        if (oldWord !== modern) {
-                            map[oldWord] = modern;
+                        // Handle cases where modern word is the target of another rule
+                        let source = modern;
+                        while (source.includes(newChar)) {
+                            source = source.split(newChar).join(oldChar);
+                        }
+                        if (source !== modern) {
+                            wordReplacements[source] = wordReplacements[source] || modern;
                         }
                     }
                 }
@@ -136,14 +144,20 @@ export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' |
                 // Reverse Kakikae: Modern replacements -> Old characters
                 for (const oldChar of rule.old) {
                     if (modern.includes(newChar)) {
-                        const oldWord = modern.split(newChar).join(oldChar);
-                        if (oldWord !== modern) {
-                            map[modern] = oldWord;
+                        let replaced = wordReplacements[modern] || modern;
+                        while (replaced.includes(newChar)) {
+                            replaced = replaced.split(newChar).join(oldChar);
+                        }
+                        if (replaced !== modern) {
+                            wordReplacements[modern] = replaced;
                         }
                     } else if (modern.includes(oldChar)) {
-                        const newWord = modern.split(oldChar).join(newChar);
-                        if (newWord !== modern) {
-                            map[newWord] = modern;
+                        let source = modern;
+                        while (source.includes(oldChar)) {
+                            source = source.split(oldChar).join(newChar);
+                        }
+                        if (source !== modern) {
+                            wordReplacements[source] = wordReplacements[source] || modern;
                         }
                     }
                 }
@@ -151,7 +165,7 @@ export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' |
         }
     }
 
-    return map;
+    return wordReplacements;
 }
 
 export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = [], symbol: string = ''): string {
