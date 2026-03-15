@@ -91,13 +91,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 		console.log(`[Kyujify] Text to cycle (first 100 chars): ${text.substring(0, 100)}`);
 
+		const settings = vscode.workspace.getConfiguration('kyujify');
+		const symbol = settings.get<string>('lineStartSymbol', '');
+
 		const nextVariantMap = await getNextVariantMap(context);
 		if (!nextVariantMap || Object.keys(nextVariantMap).length === 0) {
 			console.log('[Kyujify] No variant mappings available; cycleVariants is a no-op.');
 			return;
 		}
 
-		const cycledText = cycleVariantsInText(text, nextVariantMap);
+		const cycledText = cycleVariantsInText(text, nextVariantMap, symbol);
 		console.log(`[Kyujify] Cycled text (first 100 chars): ${cycledText.substring(0, 100)}`);
 
 		console.log('[Kyujify] Applying cycleVariants edit to editor...');
@@ -127,6 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const settings = vscode.workspace.getConfiguration('kyujify');
 		const exclusions = settings.get<string[]>('exclusions', []);
+		const symbol = settings.get<string>('lineStartSymbol', '');
 
 		const selection = editor.selection;
 		const text = selection.isEmpty
@@ -141,7 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const convertedText = applyKakikae(text, kakikaeMap, exclusions);
+		const convertedText = applyKakikae(text, kakikaeMap, exclusions, symbol);
 		console.log(`[Kyujify] Kakikae-converted text (first 100 chars): ${convertedText.substring(0, 100)}`);
 
 		console.log('[Kyujify] Applying kakikae edit to editor...');
@@ -171,6 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const settings = vscode.workspace.getConfiguration('kyujify');
 		const exclusions = settings.get<string[]>('exclusions', []);
+		const symbol = settings.get<string>('lineStartSymbol', '');
 
 		const selection = editor.selection;
 		const text = selection.isEmpty
@@ -185,7 +190,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const convertedText = applyKakikae(text, kakikaeMap, exclusions);
+		const convertedText = applyKakikae(text, kakikaeMap, exclusions, symbol);
 		console.log(`[Kyujify] Reverse Kakikae-converted text (first 100 chars): ${convertedText.substring(0, 100)}`);
 
 		console.log('[Kyujify] Applying reverse kakikae edit to editor...');

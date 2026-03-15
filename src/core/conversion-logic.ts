@@ -60,7 +60,23 @@ export function convertLine(
     return convertedText;
 }
 
-export function cycleVariantsInText(text: string, nextVariantMap: Record<string, string>): string {
+export function cycleVariantsInText(text: string, nextVariantMap: Record<string, string>, symbol: string = ''): string {
+    if (symbol) {
+        const lines = text.split('\n');
+        const convertedLines = lines.map(line => {
+            if (line.startsWith(symbol)) {
+                const trimmedLine = line.slice(symbol.length);
+                return symbol + cycleVariantsInternal(trimmedLine, nextVariantMap);
+            }
+            return line;
+        });
+        return convertedLines.join('\n');
+    } else {
+        return cycleVariantsInternal(text, nextVariantMap);
+    }
+}
+
+function cycleVariantsInternal(text: string, nextVariantMap: Record<string, string>): string {
     let result = '';
     for (const ch of text) {
         const mapped = nextVariantMap[ch] || ch;
@@ -138,7 +154,23 @@ export function buildKakikaeMap(rules: KakikaeRule[], direction: 'toShinjitai' |
     return map;
 }
 
-export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = []): string {
+export function applyKakikae(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = [], symbol: string = ''): string {
+    if (symbol) {
+        const lines = text.split('\n');
+        const convertedLines = lines.map(line => {
+            if (line.startsWith(symbol)) {
+                const trimmedLine = line.slice(symbol.length);
+                return symbol + applyKakikaeInternal(trimmedLine, kakikaeMap, exclusions);
+            }
+            return line;
+        });
+        return convertedLines.join('\n');
+    } else {
+        return applyKakikaeInternal(text, kakikaeMap, exclusions);
+    }
+}
+
+function applyKakikaeInternal(text: string, kakikaeMap: Record<string, string>, exclusions: string[] = []): string {
     if (!kakikaeMap || Object.keys(kakikaeMap).length === 0) {
         return text;
     }

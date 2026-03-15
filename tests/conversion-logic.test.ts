@@ -74,6 +74,12 @@ describe('conversion-logic', () => {
             expect(cycleVariantsInText('鬬', nextMap)).toBe('闘');
             expect(cycleVariantsInText('漢字', nextMap)).toBe('漢字');
         });
+
+        it('respects line start symbols', () => {
+            const nextMap = { '闘': '鬥' };
+            const text = '闘\n#闘\n闘';
+            expect(cycleVariantsInText(text, nextMap, '#')).toBe('闘\n#鬥\n闘');
+        });
     });
 
     describe('buildNextVariantMap', () => {
@@ -105,7 +111,12 @@ describe('conversion-logic', () => {
         });
 
         it('respects exclusions in kakikae', () => {
-        expect(applyKakikae('連繋している', kakikaeMap, ['連繋'])).toBe('連繋している');
+            expect(applyKakikae('連繋している', kakikaeMap, ['連繋'])).toBe('連繋している');
+        });
+
+        it('respects line start symbols', () => {
+            const text = '連繋\n#連繋\n連繋';
+            expect(applyKakikae(text, kakikaeMap, [], '#')).toBe('連繋\n#連係\n連繋');
         });
     });
 
