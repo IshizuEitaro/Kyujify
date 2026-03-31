@@ -1,10 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "rules": {
-    "semi": "warn",
     "curly": "warn",
     "eqeqeq": "warn",
-    "no-throw-literal": "warn",
-    "typescript/naming-convention": "warn"
+    "no-throw-literal": "warn"
   }
 }
