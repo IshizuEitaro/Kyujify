@@ -1,6 +1,6 @@
 function makeUniquePlaceholder(prefix: string, index: number, text: string): string {
   const prefixMarker = String.fromCodePoint(
-    0xe100 + [...prefix].reduce((sum, ch) => sum + ch.codePointAt(0)!, 0) % 0x100,
+    0xe100 + ([...prefix].reduce((sum, ch) => sum + ch.codePointAt(0)!, 0) % 0x100),
   );
   let token = `\uE000${prefixMarker}${String.fromCodePoint(0xe200 + index)}\uE001`;
   while (text.includes(token)) {
