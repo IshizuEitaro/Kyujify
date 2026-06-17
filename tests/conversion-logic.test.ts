@@ -55,6 +55,16 @@ describe("conversion-logic", () => {
       expect(result).toBe("學校に行く");
     });
 
+    it("does not convert characters introduced by an earlier replacement", () => {
+      const pairs: [string, string][] = [
+        ["A", "AB"],
+        ["B", "C"],
+      ];
+
+      expect(convertText("A B", "kyujitai", pairs)).toBe("AB C");
+      expect(convertText("AB C", "shinjitai", pairs)).toBe("A B");
+    });
+
     it("handles no match", () => {
       const result = convertText("あいうえお", "kyujitai", defaultPairs);
       expect(result).toBe("あいうえお");
@@ -117,6 +127,15 @@ describe("conversion-logic", () => {
 
     it("applies kakikae rules to multiple occurrences", () => {
       expect(applyKakikae("連繋と聯繋", kakikaeMap)).toBe("連係と連係");
+    });
+
+    it("does not convert characters introduced by an earlier kakikae replacement", () => {
+      const map = {
+        A: "AB",
+        B: "C",
+      };
+
+      expect(applyKakikae("A B", map)).toBe("AB C");
     });
 
     it("handles multiple replacements in the same word (toShinjitai)", () => {
