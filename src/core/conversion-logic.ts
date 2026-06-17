@@ -1,5 +1,8 @@
 function makeUniquePlaceholder(prefix: string, index: number, text: string): string {
-  let token = `\uE000${prefix}_${index}\uE001`;
+  const prefixMarker = String.fromCodePoint(
+    0xe100 + ([...prefix].reduce((sum, ch) => sum + ch.codePointAt(0)!, 0) % 0x100),
+  );
+  let token = `\uE000${prefixMarker}${String.fromCodePoint(0xe200 + index)}\uE001`;
   while (text.includes(token)) {
     token += "\uE002";
   }
@@ -36,6 +39,7 @@ export function convertLine(
 ): string {
   let convertedText = text.normalize("NFC");
   const exclusionPlaceholders: { [key: string]: string } = {};
+  const replacementPlaceholders: { [key: string]: string } = {};
 
   // Sort exclusions by length (longest first) to prevent shorter exclusions from partially masking longer ones
   const sortedExclusions = [...exclusions]
@@ -62,9 +66,19 @@ export function convertLine(
     const from = (to === "kyujitai" ? shinjitai : kyujitai).normalize("NFC");
     const toChar = (to === "kyujitai" ? kyujitai : shinjitai).normalize("NFC");
     if (from && from !== toChar) {
-      convertedText = convertedText.split(from).join(toChar);
+      const placeholder = makeUniquePlaceholder(
+        "CONVERSION",
+        Object.keys(replacementPlaceholders).length,
+        convertedText,
+      );
+      replacementPlaceholders[placeholder] = toChar;
+      convertedText = convertedText.split(from).join(placeholder);
     }
   }
+
+  Object.entries(replacementPlaceholders).forEach(([placeholder, replacement]) => {
+    convertedText = convertedText.replaceAll(placeholder, replacement);
+  });
 
   Object.entries(exclusionPlaceholders).forEach(([placeholder, original]) => {
     convertedText = convertedText.replaceAll(placeholder, original);
@@ -229,6 +243,7 @@ function applyKakikaeInternal(
   let convertedText = text.normalize("NFC");
 
   const exclusionPlaceholders: { [placeholder: string]: string } = {};
+  const replacementPlaceholders: { [placeholder: string]: string } = {};
   const sortedExclusions = [...exclusions]
     .map((e) => e.normalize("NFC"))
     .filter((e) => e.length > 0)
@@ -250,9 +265,19 @@ function applyKakikaeInternal(
       continue;
     }
     if (convertedText.includes(from)) {
-      convertedText = convertedText.split(from).join(to);
+      const placeholder = makeUniquePlaceholder(
+        "KAKIKAE",
+        Object.keys(replacementPlaceholders).length,
+        convertedText,
+      );
+      replacementPlaceholders[placeholder] = to;
+      convertedText = convertedText.split(from).join(placeholder);
     }
   }
+
+  Object.entries(replacementPlaceholders).forEach(([placeholder, replacement]) => {
+    convertedText = convertedText.split(placeholder).join(replacement);
+  });
 
   Object.entries(exclusionPlaceholders).forEach(([placeholder, original]) => {
     convertedText = convertedText.split(placeholder).join(original);
