@@ -1,7 +1,7 @@
 # Kyujify - Japanese Character Converter
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/Ishizue.kyujify)](https://marketplace.visualstudio.com/items?itemName=Ishizue.kyujify)
-[![Downloads](https://img.shields.io/visual-studio-marketplace/d/Ishizue.kyujify)](https://marketplace.visualstudio.com/items?itemName=Ishizue.kyujify)
+[![Version](https://vsmarketplacebadges.dev/version/Ishizue.kyujify.svg)](https://marketplace.visualstudio.com/items?itemName=Ishizue.kyujify)
+[![Downloads](https://vsmarketplacebadges.dev/downloads-short/Ishizue.kyujify.svg)](https://marketplace.visualstudio.com/items?itemName=Ishizue.kyujify)
 
 Convert between modern Shinjitai (新字体) and historical Kyūjitai (旧字体) Japanese characters directly in VS Code.
 
