@@ -1,7 +1,7 @@
 {
   "name": "kyujify",
   "displayName": "Kyujify: Shinjitai ↔ Kyujitai Converter",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Convert between modern and traditional Japanese characters, Kyujitai and Shinjitai",
   "categories": [
     "Formatters"
